@@ -85,7 +85,6 @@ def get_layer_id(name, num_layers, num_encoder_layers=None):
     final_layers = [
         "dilated_conv", "end_conv", "fc_project", "fc_his", "fc_channel", "head"
     ]
-    # TODO: dilated_conv layer decay
     if name.startswith(tuple(first_layers)):
         return 0
     elif name.startswith(tuple(decoder_first_layers)):

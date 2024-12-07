@@ -575,7 +575,6 @@ class MaskedGraphAutoEncoder(nn.Module):
         inner_states = self.blocks(x, attn_bias)
         x = inner_states[-1].contiguous().transpose(0, 1)
         x = self.norm(x)
-        # TODO: add eigenvector PE
         graph_rep, x = self.get_graph_rep(x, x_shape)
         x = x.contiguous().view(N, -1, D)
         return x, graph_rep, mask, ids_restore, x_shape
