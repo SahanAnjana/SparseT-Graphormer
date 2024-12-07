@@ -249,10 +249,6 @@ def main(args):
         loss_scaler=loss_scaler,
     )
 
-    if wandb_params is not None and args.sweep_id:
-        if misc.is_main_process():
-            diff = {k: vars(args)[k] for k in set(vars(args)) ^ set(wandb_params)}  # get missing args in wandb
-            wandb.config.update(diff, allow_val_change=True)
     if wandb_params is not None and args.wandb_watch and misc.is_main_process():
         wandb.watch(model, log='all')
 

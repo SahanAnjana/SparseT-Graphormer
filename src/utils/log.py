@@ -152,8 +152,7 @@ def setup_wandb(args, global_rank, device):
                 mode='offline' if args.wandb_offline else 'online',
             )
         config_dict = wandb_run.config.as_dict()
-        if wandb_run.sweep_id:
-            config_dict['sweep_id'] = wandb_run.sweep_id
+
         tmp = [config_dict]
         if args.distributed:
             dist.barrier()

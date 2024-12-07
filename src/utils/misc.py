@@ -652,11 +652,6 @@ def get_updates(data_sample, args: argparse.Namespace, wandb_params: dict):
         vals = list()
         for param, v in wandb_params.items():
             setattr(args, param, v)
-            if not param == 'sweep_id':
-                if isinstance(v, Iterable):
-                    vals += [b for b in v]
-                else:
-                    vals.append(v)
 
     if not args.test:
         eff_batch_size = args.batch_size * args.accum_iter * get_world_size()
@@ -675,18 +670,6 @@ def get_updates(data_sample, args: argparse.Namespace, wandb_params: dict):
     else:
         raise NotImplementedError()
 
-    if wandb_params and args.sweep_id and args.output_dir:
-        if hasattr(args, 'sweep_dir'):
-            sweep_dir = args.sweep_dir
-        else:
-            sweep_dir = os.path.join(args.output_dir, args.sweep_id)
-            args.sweep_dir = sweep_dir
-        if not os.path.isdir(sweep_dir):
-            Path(sweep_dir).mkdir(parents=True, exist_ok=True)
-        sweep_output_dir = '_'.join(list(map(str, vals)))
-        sweep_output_dir = os.path.join(sweep_dir, sweep_output_dir)
-        Path(sweep_output_dir).mkdir(parents=True, exist_ok=True)
-        args.sweep_output_dir = sweep_output_dir
 
 
 def get_samples_targets(batch, task):
