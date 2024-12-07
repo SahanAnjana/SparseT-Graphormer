@@ -369,7 +369,7 @@ def generate_regression_task(X, n_hist, n_pred):
     return features, targets
 
 
-def generate_split(X, y, split_ratio):
+def generate_split(X, y, split_ratio, norm):
     num_data = X.shape[0]
     assert num_data == y.shape[0]
 
@@ -395,4 +395,7 @@ def generate_split(X, y, split_ratio):
     )
     train_x, val_x, test_x = X[train_idx], X[valid_idx], X[test_idx]
     train_y, val_y, test_y = y[train_idx], y[valid_idx], y[test_idx]
-    return normalize(train_x, val_x, test_x, train_y, val_y, test_y), train_idx, valid_idx, test_idx
+    if norm:
+        return normalize(train_x, val_x, test_x, train_y, val_y, test_y), train_idx, valid_idx, test_idx
+    else:
+        return (train_x, val_x, test_x, train_y, val_y, test_y, None), train_idx, valid_idx, test_idx

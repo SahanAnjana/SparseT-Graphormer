@@ -23,7 +23,9 @@ def get_connectivity(adj_matrix_path):
     return edge_indices, edge_values
 
 
-def get_raw_data(dataset_path, split_ratio, n_hist, n_pred):
+def get_raw_data(dataset_path, split_ratio, n_hist, n_pred, norm):
+    assert norm, 'Traffic data should be normalized for better performance'
+
     X_s, y_s = list(), list()
     scaler = None
     for split in ['train', 'val', 'test']:
@@ -53,7 +55,7 @@ def get_raw_data(dataset_path, split_ratio, n_hist, n_pred):
                     (train_x, val_x, test_x,
                      train_y, val_y, test_y, scaler),
                     train_idx, val_idx, test_idx,
-                ) = generate_split(features, targets, split_ratio)
+                ) = generate_split(features, targets, split_ratio, norm)
             else:
                 data_csv_path = os.path.join(dataset_path, 'vel.csv')
                 print(f'Loading data from {data_csv_path}')
@@ -67,7 +69,7 @@ def get_raw_data(dataset_path, split_ratio, n_hist, n_pred):
                     (train_x, val_x, test_x,
                      train_y, val_y, test_y, scaler),
                     train_idx, val_idx, test_idx,
-                ) = generate_split(features, targets, split_ratio)
+                ) = generate_split(features, targets, split_ratio, norm)
 
             suffix = ''
             if add_time_in_day is not None:
@@ -111,6 +113,7 @@ def get_dataset(
         graph_token=True,
         seed=0,
         task='pred',
+        norm=True,
 ):
     assert mode in [
         "pretrain",
@@ -132,6 +135,7 @@ def get_dataset(
         split_ratio,
         n_hist,
         n_pred,
+        norm
     )
     if scaler:
         print(f'Using normalization with {str(scaler)}')
