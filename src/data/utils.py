@@ -360,20 +360,22 @@ def generate_regression_task(
     T, V, D = data_np.shape
 
     # Replace sudden drops with historical averages if enabled
+    drops = 0
     if replace_drops:
         for v in range(V):  # Iterate over nodes
             for d in range(D):  # Iterate over features
                 t = 1
+                historical_avg = np.mean(data_np[:, v, d][data_np[:, v, d] != 0])
                 while t < T:
                     if data_np[t, v, d] == 0 and data_np[t - 1, v, d] != 0:  # Check for sudden drops
                         start_t = t
                         while t < T and data_np[t, v, d] == 0:
                             t += 1
-                        historical_avg = np.mean(data_np[:t, v, d][data_np[:t, v, d] != 0])
                         data_np[start_t:t, v, d] = historical_avg
+                        drops += 1
                     else:
                         t += 1
-
+    print(f'Replaced {drops} sudden drops with historical averages')
     # Create indices for slicing data into features and targets
     indices = [
         (i, i + (n_hist + n_pred))
