@@ -371,7 +371,9 @@ def generate_regression_task(
                         start_t = t
                         while t < T and data_np[t, v, d] == 0:
                             t += 1
-                        data_np[start_t:t, v, d] = historical_avg
+                        noise = np.random.normal(loc=0, scale=0.05 * historical_avg, size=(t - start_t))
+                        data_np[start_t:t, v, d] = historical_avg + noise
+
                         drops += 1
                     else:
                         t += 1
