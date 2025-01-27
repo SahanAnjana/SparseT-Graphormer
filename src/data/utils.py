@@ -311,61 +311,81 @@ def collator(items, max_node=512, multi_hop_max_dist=20, spatial_pos_max=20, gra
     )
 
 
-def generate_regression_task_df(df, n_hist, n_pred, add_time_in_day=True, add_day_in_week=False):
-    '''
+def generate_regression_task(
+        data, n_hist, n_pred,
+        add_time_in_day=True, add_day_in_week=False,
+        replace_drops=True
+):
+    """
+    Generate features and targets for regression tasks from a DataFrame or NumPy array.
 
-    :param df: dataframe with all sensor data with shape[T, V]
-    :param n_hist: number of observed time points
-    :param n_pred: time points to be predicted
-    :param add_time_in_day: whether to add time in day information to the traffic volume sensor data
-    :param add_day_in_week: whether to add time in week information to the traffic volume sensor data
-    :return: features and targets of shape [num datapoints, time slice, num_nodes, d]
-    '''
+    :param data: DataFrame (shape [T, V]) or NumPy array (shape [T, V, D]) of sensor data
+    :param n_hist: Number of observed time points
+    :param n_pred: Time points to be predicted
+    :param add_time_in_day: Whether to add time-in-day information (only for DataFrame inputs)
+    :param add_day_in_week: Whether to add day-in-week information (only for DataFrame inputs)
+    :param replace_drops: Whether to replace sudden drops (values dropping to 0) with historical averages
+    :return: Features and targets as NumPy arrays
+    """
     features, targets = [], []
-    T, V = df.shape
 
-    data = np.expand_dims(df.values, axis=-1)
-    data_list = [data]
-    if not df.index.values.dtype == np.dtype('<M8[ns]'):
-        add_time_in_day = False
-        add_day_in_week = False
+    # Check if input is a DataFrame or NumPy array
+    is_dataframe = isinstance(data, pd.DataFrame)
 
-    if add_time_in_day:
-        time_ind = (df.index.values - df.index.values.astype("datetime64[D]")) / np.timedelta64(1, "D")
-        time_in_day = np.tile(time_ind, [1, V, 1]).transpose((2, 1, 0))
-        data_list.append(time_in_day)
-    if add_day_in_week:
-        day_in_week = np.zeros(shape=(T, V, 7))
-        day_in_week[np.arange(T), :, df.index.dayofweek] = 1
-        data_list.append(day_in_week)
-    data = np.concatenate(data_list, axis=-1)
+    if is_dataframe:
+        df = data
+        T, V = df.shape
+        data_np = np.expand_dims(df.values, axis=-1)  # Convert DataFrame to NumPy array
+        data_list = [data_np]
 
+        # Handle time-based features if index is datetime
+        if not df.index.values.dtype == np.dtype("<M8[ns]"):
+            add_time_in_day = False
+            add_day_in_week = False
+        if add_time_in_day:
+            time_ind = (df.index.values - df.index.values.astype("datetime64[D]")) / np.timedelta64(1, "D")
+            time_in_day = np.tile(time_ind, [1, V, 1]).transpose((2, 1, 0))
+            data_list.append(time_in_day)
+        if add_day_in_week:
+            day_in_week = np.zeros(shape=(T, V, 7))
+            day_in_week[np.arange(T), :, df.index.dayofweek] = 1
+            data_list.append(day_in_week)
+
+        # Combine all features into a single NumPy array
+        data_np = np.concatenate(data_list, axis=-1)
+    else:
+        data_np = data
+
+    T, V, D = data_np.shape
+
+    # Replace sudden drops with historical averages if enabled
+    if replace_drops:
+        for v in range(V):  # Iterate over nodes
+            for d in range(D):  # Iterate over features
+                t = 1
+                while t < T:
+                    if data_np[t, v, d] == 0 and data_np[t - 1, v, d] != 0:  # Check for sudden drops
+                        start_t = t
+                        while t < T and data_np[t, v, d] == 0:
+                            t += 1
+                        data_np[start_t:t, v, d] = data_np[start_t - 1, v, d]
+                    else:
+                        t += 1
+
+    # Create indices for slicing data into features and targets
     indices = [
         (i, i + (n_hist + n_pred))
         for i in range(T - (n_hist + n_pred) + 1)
     ]
 
     for i, j in indices:
-        features.append(data[i: i + n_hist, ...])
-        targets.append(data[i + n_hist: j, ...])
+        features.append(data_np[i: i + n_hist, ...])
+        targets.append(data_np[i + n_hist: j, ...])
+
+    # Convert features and targets to arrays
     features = np.stack(features, axis=0)
     targets = np.stack(targets, axis=0)
-    return features, targets
 
-
-def generate_regression_task(X, n_hist, n_pred):
-    features, targets = [], []
-    T, V, D = X.shape
-    indices = [
-        (i, i + (n_hist + n_pred))
-        for i in range(T - (n_hist + n_pred) + 1)
-    ]
-
-    for i, j in indices:
-        features.append(X[i: i + n_hist, ...])
-        targets.append(X[i + n_hist: j, ...])
-    features = np.stack(features, axis=0)
-    targets = np.stack(targets, axis=0)
     return features, targets
 
 

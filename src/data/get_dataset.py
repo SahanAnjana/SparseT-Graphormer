@@ -11,7 +11,7 @@ from torch_geometric.utils import dense_to_sparse
 
 from src.data.wrapper import wrap_traffic_dataset
 from src.data.utils import (
-    generate_regression_task, generate_regression_task_df,
+    generate_regression_task,
     generate_split, StandardScaler
 )
 
@@ -45,7 +45,7 @@ def get_raw_data(dataset_path, split_ratio, n_hist, n_pred, norm):
                 print(f'Loading data from {h5_path[0]}')
                 df = pd.read_hdf(h5_path[0])
                 add_time_in_day, add_time_in_week = True, False
-                features, targets = generate_regression_task_df(
+                features, targets = generate_regression_task(
                     df, n_hist, n_pred,
                     add_time_in_day=add_time_in_day,
                     add_day_in_week=add_time_in_week,
@@ -64,7 +64,9 @@ def get_raw_data(dataset_path, split_ratio, n_hist, n_pred, norm):
                 if len(X.shape) == 2:
                     X = np.expand_dims(X, 1)
                 X = X.transpose((0, 2, 1)).astype(np.float32)
-                features, targets = generate_regression_task(X, n_hist, n_pred)
+                features, targets = generate_regression_task(
+                    X, n_hist, n_pred
+                )
                 (
                     (train_x, val_x, test_x,
                      train_y, val_y, test_y, scaler),
