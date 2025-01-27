@@ -11,6 +11,7 @@ import json
 pyximport.install(setup_args={"include_dirs": np.get_include()})
 from src.data.algos import gen_edge_input, floyd_warshall
 from torch_geometric.data import Data
+import pandas as pd
 
 
 class Scaler:
