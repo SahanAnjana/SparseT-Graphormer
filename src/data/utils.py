@@ -312,10 +312,39 @@ def collator(items, max_node=512, multi_hop_max_dist=20, spatial_pos_max=20, gra
     )
 
 
+def fill_drops(data):
+    if len(data.shape) == 3:
+        T, V, D = data.shape
+    elif len(data.shape) == 4:
+        N, T, V, D = data.shape
+    else:
+        raise NotImplementedError('expected data shape to have 3 or 4 dimensions')
+
+    # Replace sudden drops with historical averages if enabled
+    drops = 0
+    for v in range(V):  # Iterate over nodes
+        for d in range(D):  # Iterate over features
+            t = 1
+            while t < T:
+                if data[t, v, d] == 0 and data[t - 1, v, d] != 0:  # Check for sudden drops
+                    start_t = t
+                    while t < T and data[t, v, d] == 0:
+                        t += 1
+                    historical_avg = np.mean(data[:start_t, v, d][data[:start_t, v, d] != 0])
+                    noise = np.random.normal(loc=0, scale=0.05 * historical_avg, size=(t - start_t))
+                    data[start_t:t, v, d] = historical_avg + noise
+
+                    drops += 1
+                else:
+                    t += 1
+    print(f'Replaced {drops} sudden drops with historical averages')
+    return data
+
+
 def generate_regression_task(
         data, n_hist, n_pred,
         add_time_in_day=True, add_day_in_week=False,
-        replace_drops=True
+        replace_drops=False,
 ):
     """
     Generate features and targets for regression tasks from a DataFrame or NumPy array.
@@ -358,26 +387,9 @@ def generate_regression_task(
         data_np = data
 
     T, V, D = data_np.shape
-
-    # Replace sudden drops with historical averages if enabled
-    drops = 0
     if replace_drops:
-        for v in range(V):  # Iterate over nodes
-            for d in range(D):  # Iterate over features
-                t = 1
-                historical_avg = np.mean(data_np[:, v, d][data_np[:, v, d] != 0])
-                while t < T:
-                    if data_np[t, v, d] == 0 and data_np[t - 1, v, d] != 0:  # Check for sudden drops
-                        start_t = t
-                        while t < T and data_np[t, v, d] == 0:
-                            t += 1
-                        noise = np.random.normal(loc=0, scale=0.05 * historical_avg, size=(t - start_t))
-                        data_np[start_t:t, v, d] = historical_avg + noise
+        data_np = fill_drops(data_np)
 
-                        drops += 1
-                    else:
-                        t += 1
-    print(f'Replaced {drops} sudden drops with historical averages')
     # Create indices for slicing data into features and targets
     indices = [
         (i, i + (n_hist + n_pred))
@@ -396,6 +408,8 @@ def generate_regression_task(
 
 
 def generate_split(X, y, split_ratio, norm):
+    X, X_fill = X
+    y, y_fill = y
     num_data = X.shape[0]
     assert num_data == y.shape[0]
 
@@ -419,8 +433,8 @@ def generate_split(X, y, split_ratio, norm):
         test_size=valid_split,
         shuffle=shuffle,
     )
-    train_x, val_x, test_x = X[train_idx], X[valid_idx], X[test_idx]
-    train_y, val_y, test_y = y[train_idx], y[valid_idx], y[test_idx]
+    train_x, val_x, test_x = X_fill[train_idx], X[valid_idx], X[test_idx]
+    train_y, val_y, test_y = y_fill[train_idx], y[valid_idx], y[test_idx]
     if norm:
         return normalize(train_x, val_x, test_x, train_y, val_y, test_y), train_idx, valid_idx, test_idx
     else:

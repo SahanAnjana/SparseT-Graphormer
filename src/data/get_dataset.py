@@ -50,12 +50,23 @@ def get_raw_data(dataset_path, split_ratio, n_hist, n_pred, norm):
                     add_time_in_day=add_time_in_day,
                     add_day_in_week=add_time_in_week,
                 )
+                features_fill, targets_fill = generate_regression_task(
+                    df, n_hist, n_pred,
+                    add_time_in_day=add_time_in_day,
+                    add_day_in_week=add_time_in_week,
+                    replace_drops=True,
+                )
 
                 (
                     (train_x, val_x, test_x,
                      train_y, val_y, test_y, scaler),
                     train_idx, val_idx, test_idx,
-                ) = generate_split(features, targets, split_ratio, norm)
+                ) = generate_split(
+                    (features, features_fill),
+                    (targets, targets_fill),
+                    split_ratio,
+                    norm
+                )
             else:
                 data_csv_path = os.path.join(dataset_path, 'vel.csv')
                 print(f'Loading data from {data_csv_path}')
@@ -67,11 +78,20 @@ def get_raw_data(dataset_path, split_ratio, n_hist, n_pred, norm):
                 features, targets = generate_regression_task(
                     X, n_hist, n_pred
                 )
+                features_fill, targets_fill = generate_regression_task(
+                    X, n_hist, n_pred, replace_drops=True
+                )
+
                 (
                     (train_x, val_x, test_x,
                      train_y, val_y, test_y, scaler),
                     train_idx, val_idx, test_idx,
-                ) = generate_split(features, targets, split_ratio, norm)
+                ) = generate_split(
+                    (features, features_fill),
+                    (targets, targets_fill),
+                    split_ratio,
+                    norm
+                )
 
             suffix = ''
             if add_time_in_day is not None:
