@@ -4,29 +4,156 @@ from typing import List
 
 import torch
 import torch.nn as nn
-from fairseq.modules import FairseqDropout
-from fairseq import utils
 
-from torch.nn import Linear, ReLU
 import torch.nn.functional as F
 from torch_geometric.nn import (
     GCNConv, GraphConv, SAGEConv, ChebConv, GATConv,
     SGConv, GatedGraphConv,
-    BatchNorm, LayerNorm,
-    global_max_pool, global_mean_pool
+    global_max_pool, global_mean_pool,
+    TopKPooling
 )
 
-from src.modules.baseline import STConv, DCRNN_Layer
+from gmae_st.modules.baseline import STConv, DCRNN_Layer
 
 GRAPH_CONV_DICT = {
     'gcn': GCNConv,  # Graph Convolutional Network
-    'graphsage': SAGEConv,  # GraphSAGE
+    # 'graphsage': SAGEConv,  # GraphSAGE
     'cheb': partial(ChebConv, K=3),  # Chebyshev Convolution
-    'gat': GATConv,  # Graph Attention Network
+    # 'gat': GATConv,  # Graph Attention Network
     'sg': SGConv,  # Simplified Graph Convolution
     'graphconv': GraphConv,  # Graph Convolution (Kipf & Welling)
     'gated': GatedGraphConv,  # Gated Graph Convolution
 }
+
+
+class GCNMLP(nn.Module):
+    def __init__(
+            self,
+            node_feature_dim: int = 1,
+            pred_node_dim: int = 1,
+            num_nodes: int = 512 * 9,
+            pred_num_classes: int = 3,
+            mlp_pred_dropout: float = 0.1,
+            class_init_prob: List[float] = None,
+            encoder_embed_dim: int = 512,
+            encoder_depth=3,
+            dropout=0.1,
+            max_pooling=True,
+            gcn_type='gcn',
+            norm_layer=nn.LayerNorm,
+            trunc_init=True,
+            *args,
+            **kwargs,
+    ):
+        super().__init__()
+        if class_init_prob is None:
+            class_init_prob = [1 / pred_num_classes] * pred_num_classes
+
+        assert len(class_init_prob) == pred_num_classes
+        assert math.isclose(sum(class_init_prob), 1.0), 'class probabilities must sum to 1'
+        assert gcn_type in GRAPH_CONV_DICT.keys(), f'conv_type must be one of {GRAPH_CONV_DICT.keys()}'
+        self.conv_type = gcn_type
+        self.conv_depth = encoder_depth
+        self.max_pooling = max_pooling
+        self.pred_node_dim = pred_node_dim
+        self.pred_num_classes = pred_num_classes
+        self.class_init_prob = class_init_prob
+        self.num_nodes = num_nodes
+        self.node_feature_dim = node_feature_dim
+        self.encoder_embed_dim = encoder_embed_dim
+        self.trunc_init = trunc_init
+        self.norm = norm_layer(encoder_embed_dim)
+        self.mlp_pred_dropout = nn.Dropout(mlp_pred_dropout)
+        self.dropout_module = nn.Dropout(dropout)
+        self.head = nn.Linear(self.encoder_embed_dim, pred_num_classes)
+
+        graph_conv = GRAPH_CONV_DICT[gcn_type]
+        self.convs = torch.nn.ModuleList([
+            graph_conv(
+                self.node_feature_dim if i == 0 else encoder_embed_dim,
+                encoder_embed_dim
+            )
+            for i in range(encoder_depth)
+        ])
+        self.initialize_weights()
+        torch.nn.init.normal_(self.head.weight, std=2e-5)
+        bias_values = torch.log(torch.FloatTensor(class_init_prob))
+        self.head.bias.data = bias_values
+
+    @torch.jit.ignore
+    def no_weight_decay(self):
+        return dict()
+
+    def initialize_weights(self):
+        # initialize nn.Linear and nn.LayerNorm
+        for conv in self.convs:
+            conv.reset_parameters()
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            # we use xavier_uniform following official JAX ViT:
+            if self.trunc_init:
+                nn.init.trunc_normal_(m.weight, std=0.02)
+            else:
+                torch.nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
+        elif isinstance(m, nn.BatchNorm2d):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
+        elif isinstance(m, nn.Conv2d):
+            if self.trunc_init:
+                nn.init.trunc_normal_(m.weight, std=0.02)
+            else:
+                torch.nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+
+    def forward(self, data):
+        x, edge_index, edge_weight = data['x'], data['edge_index'], data['edge_weight']
+        x_shape = x.shape
+        N, T, V, D = x_shape
+        if T > 1:
+            raise ValueError('GNN classification only supports 1 time step')
+
+        # Flatten the batch dimension, so x becomes [N*V, D]
+        x = x.view(N * V, D)
+
+        # Flatten edge_index for each graph in the batch
+        edge_index = edge_index.view(2, -1)  # [2, N*E]
+        edge_weight = edge_weight.view(-1)
+
+        # Shift the edge indices to account for batch-wise node indexing
+        batch_offsets = torch.arange(N, device=edge_index.device) * V
+        edge_index[0] += torch.repeat_interleave(batch_offsets, edge_index.size(1) // N)
+        edge_index[1] += torch.repeat_interleave(batch_offsets, edge_index.size(1) // N)
+
+        # Create a batch tensor indicating the graph each node belongs to
+        batch = torch.repeat_interleave(torch.arange(N, device=x.device), V)
+
+        # get node representations
+        # shape: [N, V, D] -> [N, V, end_channel]
+        for conv in self.convs:
+            x = conv(x, edge_index, edge_weight)
+            x = F.relu(x)
+            x = self.norm(x)
+            x = self.dropout_module(x)
+
+        if self.max_pooling:
+            # Global max pooling
+            x = global_max_pool(x, batch)  # [N, D]
+        else:
+            # Global mean pooling
+            x = global_mean_pool(x, batch)  # [N, D]
+
+        x = self.norm(x)
+        x = self.mlp_pred_dropout(x)
+        x = self.head(x)  # -> [N, T, class_prob] if pred_per_T else [N, class_prob]
+        return x
 
 
 class TimeSeriesPred(nn.Module):
@@ -58,8 +185,7 @@ class TimeSeriesPred(nn.Module):
         self.encoder_embed_dim = encoder_embed_dim
         self.mlp_pred_dropout = mlp_pred_dropout
 
-        act_function = utils.get_activation_fn(act_fn)
-        self.activation = act_function() if act_fn == 'swish' else act_function
+        self.activation = nn.GELU() if act_fn == 'gelu' else nn.ReLU()
         self.norm = norm_layer(encoder_embed_dim)
         if self.n_pred > self.hist_t_dim:
             self.fc_project = nn.Linear(
@@ -67,7 +193,7 @@ class TimeSeriesPred(nn.Module):
                 self.n_pred * end_channel
             )
             if batch_norm:
-                self.layer_norm = nn.LayerNorm(end_channel)
+                self.layer_norm = nn.LayerNorm(end_channel, eps=1e-8)
             self.end_conv_2 = nn.Conv2d(
                 in_channels=end_channel,
                 out_channels=self.pred_node_dim,
@@ -177,9 +303,7 @@ class DCRNN(TimeSeriesPred):
             )
             for i in range(encoder_depth)
         ])
-        self.dropout_module = FairseqDropout(
-            dropout, module_name=self.__class__.__name__
-        )
+        self.dropout_module = nn.Dropout(dropout)
         self.initialize_weights()
 
     @torch.jit.ignore
@@ -228,9 +352,7 @@ class STGCN(TimeSeriesPred):
     ):
         super().__init__(*args, **kwargs)
         self.trunc_init = trunc_init
-        self.dropout_module = FairseqDropout(
-            dropout, module_name=self.__class__.__name__
-        )
+        self.dropout_module = nn.Dropout(dropout)
         self.stconv_layers = nn.ModuleList([
             STConv(
                 num_nodes=self.num_nodes,
@@ -271,6 +393,36 @@ class STGCN(TimeSeriesPred):
         x = self.norm(x)
         pred = self.forward_end_conv(x, x.shape)
         return pred
+
+
+def gnn_mlp_mini(**kwargs):
+    model = GCNMLP(
+        encoder_embed_dim=128,
+        encoder_depth=6,
+        norm_layer=partial(nn.LayerNorm, eps=1e-8),
+        **kwargs
+    )
+    return model
+
+
+def gnn_mlp_small(**kwargs):
+    model = GCNMLP(
+        encoder_embed_dim=192,
+        encoder_depth=8,
+        norm_layer=partial(nn.LayerNorm, eps=1e-8),
+        **kwargs
+    )
+    return model
+
+
+def gnn_mlp_med(**kwargs):
+    model = GCNMLP(
+        encoder_embed_dim=384,
+        encoder_depth=10,
+        norm_layer=partial(nn.LayerNorm, eps=1e-8),
+        **kwargs
+    )
+    return model
 
 
 def DCRNN_mini(**kwargs):

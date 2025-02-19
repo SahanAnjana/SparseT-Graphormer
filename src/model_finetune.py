@@ -2,10 +2,8 @@ import math
 from functools import partial
 from typing import List
 
-from fairseq import utils
-from fairseq.modules import FairseqDropout
-from src.modules import graphormer_graph_encoder, graphormer_layers
-from src.utils.log import master_print as print
+from gmae_st.modules import graphormer_graph_encoder, graphormer_layers
+from gmae_st.utils.log import master_print as print
 
 import torch
 import torch.nn as nn
@@ -454,8 +452,8 @@ class GraphEncoderPred(GraphEncoder):
         self.n_pred = n_pred
         self.end_channel = end_channel
         self.use_conv = use_conv
-        act_function = utils.get_activation_fn(self.act_fn)
-        self.activation = act_function() if self.act_fn == 'swish' else act_function
+
+        self.activation = nn.GELU() if self.act_fn == 'gelu' else nn.ReLU()
         old_config = kwargs.get('old_config', False)
 
         if self.n_pred > self.hist_t_dim:
@@ -508,13 +506,8 @@ class GraphEncoderPred(GraphEncoder):
                 #     self.pred_node_dim
                 # )
                 self.fc_channel = nn.Linear(self.encoder_embed_dim, self.pred_node_dim)
-                self.mlp_pred_dropout = FairseqDropout(
-                    mlp_pred_dropout, module_name=self.__class__.__name__
-                )
-                self.fc_his = nn.Linear(
-                    self.hist_t_dim,
-                    self.n_pred
-                )
+                self.mlp_pred_dropout = nn.Dropout(mlp_pred_dropout)
+                self.fc_his = nn.Linear(self.hist_t_dim, self.n_pred)
 
         self.initialize_weights()
         print("model initialized")
@@ -595,10 +588,11 @@ class GraphEncoderCausalPred(GraphEncoder):
         self.n_pred = n_pred
         self.end_channel = end_channel
         self.use_conv = use_conv
-        act_function = utils.get_activation_fn(self.act_fn)
-        self.activation = act_function() if self.act_fn == 'swish' else act_function
+
+        self.activation = nn.GELU() if self.act_fn == 'gelu' else nn.ReLU()
         if not use_conv:
-            raise ValueError('graph_causal_pred has to have --use_conv')
+            use_conv = True
+            print('graph_causal_pred has to have --use_conv')
 
         self.dilated_conv = nn.ModuleList([
             CausalConv2d(
@@ -701,7 +695,7 @@ def graph_pred_micro(**kwargs):
     model = GraphEncoderPred(
         encoder_embed_dim=64,
         encoder_depth=6,
-        num_heads=4,
+        num_heads=2,
         norm_layer=partial(nn.LayerNorm, eps=1e-8),
         **kwargs,
     )
@@ -778,7 +772,7 @@ def graph_causal_pred_micro(**kwargs):
     model = GraphEncoderCausalPred(
         encoder_embed_dim=64,
         encoder_depth=6,
-        num_heads=4,
+        num_heads=2,
         norm_layer=partial(nn.LayerNorm, eps=1e-8),
         **kwargs,
     )

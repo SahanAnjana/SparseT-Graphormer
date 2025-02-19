@@ -1,11 +1,9 @@
 from functools import partial
 
-from fairseq import utils
-
 import torch
 import torch.nn as nn
-from src.modules import graphormer_graph_encoder
-from src.utils.log import master_print as print
+from gmae_st.modules import graphormer_graph_encoder
+from gmae_st.utils.log import master_print as print
 
 
 class MaskedGraphAutoEncoder(nn.Module):
@@ -68,10 +66,8 @@ class MaskedGraphAutoEncoder(nn.Module):
         self.sep_pos_embed = sep_pos_embed
         self.attention_bias = attention_bias
         self.centrality_encoding = centrality_encoding
-        self.act_fn = act_fn
-        act_function = utils.get_activation_fn(self.act_fn)
-        self.activation = act_function() if self.act_fn == 'swish' else act_function
 
+        self.activation = nn.GELU() if act_fn == 'gelu' else nn.ReLU()
         # encoder inits
         if self.graph_token:
             self.graph_token_embed = nn.Parameter(torch.zeros(1, 1, 1, encoder_embed_dim))
