@@ -42,6 +42,12 @@ class GMAEParser(argparse.ArgumentParser):
         )
         self.add_argument("--no_pin_mem", action="store_false", dest="pin_mem")
         self.set_defaults(pin_mem=True)
+        self.add_argument(
+            '--use_compile',
+            action='store_true',
+            default=False,
+            help='use torch.compile to compile the model for speed up'
+        )
 
         # distributed params
         self.add_argument(

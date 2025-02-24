@@ -9,9 +9,6 @@ import torch
 import numpy as np
 
 from src.data.utils import preprocess_item
-import pyximport
-
-pyximport.install(setup_args={'include_dirs': np.get_include()})
 import copy
 from functools import lru_cache
 

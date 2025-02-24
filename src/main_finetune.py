@@ -256,6 +256,8 @@ def main(args):
         **vars(args),
     )
     model.to(device)
+    if args.use_compile:
+        model = torch.compile(model)
     model_without_ddp = model
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -293,7 +295,8 @@ def main(args):
         loss_scaler=loss_scaler,
     )
 
-    criterion = torch.nn.MSELoss()
+    # criterion = torch.nn.MSELoss()
+    criterion = torch.nn.HuberLoss(delta=1.5)
     min_loss = 0.0
     print("criterion = %s" % str(criterion))
 

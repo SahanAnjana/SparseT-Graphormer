@@ -12,7 +12,8 @@ from utils.meters import PredTestMeter
 def test(data_loader, model, device, args, fp32=False):
     task = args.task
 
-    criterion = torch.nn.MSELoss()
+    # criterion = torch.nn.MSELoss()
+    criterion = torch.nn.HuberLoss(delta=1.5)
     metric_logger = PredTestMeter(delimiter="  ")
 
     header = "Test:"

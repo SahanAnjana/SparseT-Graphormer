@@ -4,12 +4,10 @@ from typing import Iterable
 
 import torch
 import numpy as np
-import pyximport
 from sklearn.model_selection import train_test_split
 import json
 
-pyximport.install(setup_args={"include_dirs": np.get_include()})
-from src.data.algos import gen_edge_input, floyd_warshall
+from src.data.graph_algo import gen_edge_input, floyd_warshall
 from torch_geometric.data import Data
 import pandas as pd
 

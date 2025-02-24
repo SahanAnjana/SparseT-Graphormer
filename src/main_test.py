@@ -183,6 +183,8 @@ def main(args):
     if not args.finetune:
         raise ValueError('specify the finetuned model checkpoint path')
     model.to(device)
+    if args.use_compile:
+        model = torch.compile(model)
     model_without_ddp = model
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)

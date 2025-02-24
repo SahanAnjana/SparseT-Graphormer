@@ -208,6 +208,8 @@ def main(args):
         **vars(args),
     )
     model.to(device)
+    if args.use_compile:
+        model = torch.compile(model)
     model_without_ddp = model
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
