@@ -61,9 +61,9 @@ class GraphEncoder(nn.Module):
             # >
             # < transformer args
             old_config=False,
-            graph_token=True,
-            cls_token=False,
-            sep_pos_embed=True,
+            graph_token=False,
+            cls_token=True,
+            sep_pos_embed=False,
             ablate_pos_embed=False,
             attention_bias=True,
             centrality_encoding=True,
