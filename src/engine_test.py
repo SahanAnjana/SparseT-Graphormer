@@ -28,7 +28,7 @@ def test(data_loader, model, device, args, fp32=False):
         samples, targets, target_shape = misc.get_samples_targets(batched_data, task)
 
         # compute output
-        with torch.cuda.amp.autocast(enabled=False):
+        with torch.amp.autocast(device_type=device, enabled=False):
             preds = model(batched_data)
             if scaler:
                 outputs = scaler.inverse_transform(preds, args)

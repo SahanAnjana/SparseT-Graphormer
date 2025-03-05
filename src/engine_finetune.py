@@ -63,7 +63,7 @@ def train_one_epoch(
         scaler = None if 'scaler' not in batched_data else batched_data['scaler']
 
         samples, targets, target_shape = misc.get_samples_targets(batched_data, task)
-        with torch.cuda.amp.autocast(enabled=not fp32):
+        with torch.amp.autocast(device_type=device, enabled=not fp32):
             outputs = model(batched_data)
             if scaler:
                 outputs = scaler.inverse_transform(outputs, args)
@@ -152,7 +152,7 @@ def evaluate(data_loader, model, criterion, device, args):
         samples, targets, target_shape = misc.get_samples_targets(batched_data, task)
 
         # compute output
-        with torch.cuda.amp.autocast():
+        with torch.amp.autocast(device_type=device):
             outputs = model(batched_data)
             if scaler:
                 outputs = scaler.inverse_transform(outputs, args)
