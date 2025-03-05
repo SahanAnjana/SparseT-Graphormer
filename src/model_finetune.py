@@ -2,8 +2,8 @@ import math
 from functools import partial
 from typing import List
 
-from gmae_st.modules import graphormer_graph_encoder, graphormer_layers
-from gmae_st.utils.log import master_print as print
+from src.modules import graphormer_graph_encoder, graphormer_layers
+from src.utils.log import master_print as print
 
 import torch
 import torch.nn as nn

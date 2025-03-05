@@ -13,7 +13,7 @@ from torch_geometric.nn import (
     TopKPooling
 )
 
-from gmae_st.modules.baseline import STConv, DCRNN_Layer
+from src.modules.baseline import STConv, DCRNN_Layer
 
 GRAPH_CONV_DICT = {
     'gcn': GCNConv,  # Graph Convolutional Network

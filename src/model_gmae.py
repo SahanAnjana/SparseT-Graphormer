@@ -2,8 +2,8 @@ from functools import partial
 
 import torch
 import torch.nn as nn
-from gmae_st.modules import graphormer_graph_encoder
-from gmae_st.utils.log import master_print as print
+from src.modules import graphormer_graph_encoder
+from src.utils.log import master_print as print
 
 
 class MaskedGraphAutoEncoder(nn.Module):
