@@ -130,7 +130,7 @@ def get_run_name(args):
         if len(args.finetune.split('/')) > 1:
             wandb_run_name += args.finetune.split('/')[-2]
     else:
-        wandb_run_name += f'blr_{args.blr}_wd_{args.weight_decay}_cg_{args.clip_grad}_dropout_{args.dropout}'
+        wandb_run_name += f'blr_{args.blr}_wd_{args.weight_decay}_cg_{args.clip_grad}_dropout_{args.dropout}_lossD_{args.loss_delta}'
     print(f'logging to wandb with run name: {wandb_run_name}')
     return wandb_run_name
 
