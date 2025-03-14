@@ -297,7 +297,7 @@ def main(args):
     )
 
     # criterion = torch.nn.MSELoss()
-    criterion = torch.nn.HuberLoss(delta=1.5)
+    criterion = torch.nn.HuberLoss(delta=args.loss_delta)
     min_loss = 0.0
     print("criterion = %s" % str(criterion))
 

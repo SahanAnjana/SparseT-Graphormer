@@ -170,7 +170,12 @@ class GMAEParser(argparse.ArgumentParser):
         )
         self.add_argument("--n_pred", default=12, type=int)
         self.add_argument("--normalize", action="store_true", help='z-score normalize the input')
-
+        self.add_argument(
+            '--loss_delta',
+            default=1.5,
+            type=float,
+            help='delta for huber loss'
+        )
         # wandb args
         self.add_argument(
             "--project_name",
