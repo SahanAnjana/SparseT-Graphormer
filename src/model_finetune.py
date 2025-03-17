@@ -104,6 +104,7 @@ class GraphEncoder(nn.Module):
         self.cls_token = cls_token
 
         self.encoder_embed_dim = encoder_embed_dim
+        self.encoder_depth = encoder_depth
         self.trunc_init = trunc_init
         self.act_fn = act_fn
         self.hist_t_dim = n_hist
@@ -427,10 +428,14 @@ class GraphEncoder(nn.Module):
 
         # apply Transformer blocks
         inner_states, attn_scores = self.blocks(x, attn_bias, get_attn_scores=get_attn_scores)
-        x = inner_states[-1].contiguous().transpose(0, 1)
-
-        graph_rep, x = self.get_graph_rep(x, x_shape)
-        x = x.contiguous().view(N, -1, D)
+        if not get_attn_scores:
+            x = inner_states[-1].contiguous().transpose(0, 1)
+            graph_rep, x = self.get_graph_rep(x, x_shape)
+            x = x.contiguous().view(N, -1, D)
+        else:
+            x = inner_states.contiguous().transpose(0, 1)
+            graph_rep, x = self.get_graph_rep(x[-1], x_shape)
+            x = x.contiguous().view(self.encoder_depth, -1, D)
         return x, graph_rep, attn_scores, x_shape
 
 
