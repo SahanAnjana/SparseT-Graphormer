@@ -60,6 +60,7 @@ class GraphormerGraphEncoderLayer(nn.Module):
             self_attn_bias: Optional[torch.Tensor] = None,
             self_attn_mask: Optional[torch.Tensor] = None,
             self_attn_padding_mask: Optional[torch.Tensor] = None,
+            get_attn_scores=False,
     ):
         """
         LayerNorm is applied either before or after the self-attention/ffn
@@ -75,7 +76,7 @@ class GraphormerGraphEncoderLayer(nn.Module):
             value=x,
             attn_bias=self_attn_bias,
             key_padding_mask=self_attn_padding_mask,
-            need_weights=False,
+            need_weights=get_attn_scores,
             attn_mask=self_attn_mask,
         )
         x = self.dropout_module(x)

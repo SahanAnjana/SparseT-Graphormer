@@ -160,27 +160,38 @@ class GraphormerGraphEncoder(nn.Module):
             attn_bias = self.graph_attn_bias(batched_data)
         return x, attn_bias
 
-    def forward_transformer_layers(self, x, padding_mask, attn_bias=None, attn_mask=None, last_state_only=True):
+    def forward_transformer_layers(
+            self,
+            x,
+            padding_mask,
+            attn_bias=None,
+            attn_mask=None,
+            last_state_only=True,
+            get_attn_scores=False,
+    ):
         # B x T x C -> T x B x C
         x = x.contiguous().transpose(0, 1)
 
-        inner_states = []
+        inner_states, attn_scores = [], []
         if not last_state_only:
             inner_states.append(x)
 
         for layer in self.layers:
-            x, _ = layer(
+            x, attn = layer(
                 x,
                 self_attn_padding_mask=padding_mask,
                 self_attn_mask=attn_mask,
                 self_attn_bias=attn_bias,
+                get_attn_scores=get_attn_scores,
             )
             if not last_state_only:
                 inner_states.append(x)
+                attn_scores.append(attn)
 
         if last_state_only:
             inner_states = [x]
-        return inner_states
+            attn_scores = [attn]
+        return inner_states, attn_scores
 
     def forward(
             self,
@@ -190,6 +201,7 @@ class GraphormerGraphEncoder(nn.Module):
             last_state_only: bool = True,
             # token_embeddings: Optional[torch.Tensor] = None,
             attn_mask: Optional[torch.Tensor] = None,
+            get_attn_scores=False,
     ) -> Union[Tensor, list[torch.Tensor]]:
         if attn_bias is None:
             assert not self.attention_bias, 'missing graph attention bias'
@@ -220,15 +232,16 @@ class GraphormerGraphEncoder(nn.Module):
             x = self.emb_layer_norm(x)
         x = self.dropout_module(x)
 
-        inner_states = self.forward_transformer_layers(
+        inner_states, attn_scores = self.forward_transformer_layers(
             x=x,
             padding_mask=padding_mask,
             attn_bias=attn_bias,
             attn_mask=attn_mask,
             last_state_only=last_state_only,
+            get_attn_scores=get_attn_scores,
         )
 
-        if self.traceable:
-            return torch.stack(inner_states)
+        if not last_state_only:
+            return torch.stack(inner_states), torch.stack(attn_scores)
         else:
-            return inner_states
+            return inner_states, attn_scores

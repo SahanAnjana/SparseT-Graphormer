@@ -338,12 +338,13 @@ class GraphEncoder(nn.Module):
             x = x[:, :, :]
         return graph_rep, x
 
-    def forward_encoder(self, x: torch.Tensor, attn_bias: torch.Tensor):
+    def forward_encoder(self, x: torch.Tensor, attn_bias: torch.Tensor, get_attn_scores=False):
         """
 
         :param x: time series data [Batch, Vertices, Embed_Dim, Time_step]
         :param attn_bias: attention bias computed based on graph structure and edge
         lengths [Batch, n_heads, Vertices, Vertices]
+        :param get_attn_scores: whether to return attention scores
         :return: Tuple of
         [X of shape (Batch, Time_step * Vertices + added tokens, Embed_dim),
         graph_representation,
@@ -425,12 +426,12 @@ class GraphEncoder(nn.Module):
             x = x + pos_embed.contiguous().view(N, -1, D)
 
         # apply Transformer blocks
-        inner_states = self.blocks(x, attn_bias)
+        inner_states, attn_scores = self.blocks(x, attn_bias, get_attn_scores=get_attn_scores)
         x = inner_states[-1].contiguous().transpose(0, 1)
 
         graph_rep, x = self.get_graph_rep(x, x_shape)
         x = x.contiguous().view(N, -1, D)
-        return x, graph_rep, x_shape
+        return x, graph_rep, attn_scores, x_shape
 
 
 # uses convolution for time series prediction from encoder only representations,
@@ -564,7 +565,7 @@ class GraphEncoderPred(GraphEncoder):
     def forward(self, batched_data):
         # compute attention biases and node centrality encodings
         x, attn_bias = self.blocks.compute_mods(batched_data)
-        latent, _, x_shape = self.forward_encoder(x, attn_bias)
+        latent, _, _, x_shape = self.forward_encoder(x, attn_bias)
         latent = self.norm(latent)
         pred = self.forward_pred(latent, x_shape)  # [N, L, D]
         return pred
@@ -685,7 +686,7 @@ class GraphEncoderCausalPred(GraphEncoder):
     def forward(self, batched_data):
         # compute attention biases and node centrality encodings
         x, attn_bias = self.blocks.compute_mods(batched_data)
-        latent, _, x_shape = self.forward_encoder(x, attn_bias)
+        latent, _, _, x_shape = self.forward_encoder(x, attn_bias)
         latent = self.norm(latent)
         pred = self.forward_pred(latent, x_shape)  # [N, L, D]
         return pred

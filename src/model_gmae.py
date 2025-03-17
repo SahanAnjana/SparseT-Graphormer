@@ -568,7 +568,7 @@ class MaskedGraphAutoEncoder(nn.Module):
             )
 
         # apply Transformer blocks
-        inner_states = self.blocks(x, attn_bias)
+        inner_states, _ = self.blocks(x, attn_bias)
         x = inner_states[-1].contiguous().transpose(0, 1)
         x = self.norm(x)
         graph_rep, x = self.get_graph_rep(x, x_shape)
