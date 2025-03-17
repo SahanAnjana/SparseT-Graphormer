@@ -435,7 +435,7 @@ class GraphEncoder(nn.Module):
         else:
             x = inner_states.contiguous().transpose(0, 1)
             graph_rep, x = self.get_graph_rep(x[-1], x_shape)
-            x = x.contiguous().view(self.encoder_depth, -1, D)
+            x = x.contiguous().view(self.encoder_depth, N, -1, D)
         return x, graph_rep, attn_scores, x_shape
 
 
