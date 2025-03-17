@@ -431,11 +431,16 @@ class GraphEncoder(nn.Module):
         if not get_attn_scores:
             x = inner_states[-1].contiguous().transpose(0, 1)
             graph_rep, x = self.get_graph_rep(x, x_shape)
-            x = x.contiguous().view(N, -1, D)
+
         else:
-            x = inner_states.contiguous().transpose(0, 1)
-            graph_rep, x = self.get_graph_rep(x[-1], x_shape)
-            x = x.contiguous().view(self.encoder_depth, N, -1, D)
+            inner_states = inner_states.contiguous().transpose(1, 2)
+            graph_rep, x = [], []
+            for i in range(len(inner_states)):  # for each layer
+                rep, latent = self.get_graph_rep(inner_states[i], x_shape)
+                graph_rep.append(rep)
+                latent = latent.contiguous().view(N, -1, D)
+                x.append(latent)
+            x, graph_rep = torch.stack(x), torch.stack(graph_rep)
         return x, graph_rep, attn_scores, x_shape
 
 
