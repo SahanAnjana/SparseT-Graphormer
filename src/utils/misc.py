@@ -671,7 +671,6 @@ def get_updates(data_sample, args: argparse.Namespace, wandb_params: dict):
         raise NotImplementedError()
 
 
-
 def get_samples_targets(batch, task):
     # scaler = batch['scaler']
     samples, targets = batch['x'], batch['y']

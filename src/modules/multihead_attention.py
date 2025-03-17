@@ -5,6 +5,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
 
+
 class MultiheadAttention(nn.Module):
     """Multi-headed attention.
 
@@ -12,14 +13,14 @@ class MultiheadAttention(nn.Module):
     """
 
     def __init__(
-        self,
-        embed_dim,
-        num_heads,
-        kdim=None,
-        vdim=None,
-        dropout=0.0,
-        bias=True,
-        self_attention=False,
+            self,
+            embed_dim,
+            num_heads,
+            kdim=None,
+            vdim=None,
+            dropout=0.0,
+            bias=True,
+            self_attention=False,
     ):
         super().__init__()
         self.embed_dim = embed_dim
@@ -32,7 +33,7 @@ class MultiheadAttention(nn.Module):
 
         self.head_dim = embed_dim // num_heads
         assert (
-            self.head_dim * num_heads == self.embed_dim
+                self.head_dim * num_heads == self.embed_dim
         ), "embed_dim must be divisible by num_heads"
         self.scaling = self.head_dim ** -0.5
 
@@ -51,7 +52,6 @@ class MultiheadAttention(nn.Module):
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.reset_parameters()
 
-
     def reset_parameters(self):
         if self.qkv_same_dim:
             # Empirically observed the convergence to be much better with
@@ -69,16 +69,16 @@ class MultiheadAttention(nn.Module):
             nn.init.constant_(self.out_proj.bias, 0.0)
 
     def forward(
-        self,
-        query,
-        key: Optional[Tensor],
-        value: Optional[Tensor],
-        attn_bias: Optional[Tensor],
-        key_padding_mask: Optional[Tensor] = None,
-        need_weights: bool = True,
-        attn_mask: Optional[Tensor] = None,
-        before_softmax: bool = False,
-        need_head_weights: bool = False,
+            self,
+            query,
+            key: Optional[Tensor],
+            value: Optional[Tensor],
+            attn_bias: Optional[Tensor],
+            key_padding_mask: Optional[Tensor] = None,
+            need_weights: bool = True,
+            attn_mask: Optional[Tensor] = None,
+            before_softmax: bool = False,
+            need_head_weights: bool = False,
     ) -> Tuple[Tensor, Optional[Tensor]]:
         """Input shape: Time x Batch x Channel
 
@@ -205,8 +205,8 @@ class MultiheadAttention(nn.Module):
                 # in_proj_weight used to be q + k + v with same dimensions
                 dim = int(state_dict[k].shape[0] / 3)
                 items_to_add[prefix + "q_proj.weight"] = state_dict[k][:dim]
-                items_to_add[prefix + "k_proj.weight"] = state_dict[k][dim : 2 * dim]
-                items_to_add[prefix + "v_proj.weight"] = state_dict[k][2 * dim :]
+                items_to_add[prefix + "k_proj.weight"] = state_dict[k][dim: 2 * dim]
+                items_to_add[prefix + "v_proj.weight"] = state_dict[k][2 * dim:]
 
                 keys_to_remove.append(k)
 
@@ -215,9 +215,9 @@ class MultiheadAttention(nn.Module):
                     dim = int(state_dict[k].shape[0] / 3)
                     items_to_add[prefix + "q_proj.bias"] = state_dict[k_bias][:dim]
                     items_to_add[prefix + "k_proj.bias"] = state_dict[k_bias][
-                        dim : 2 * dim
-                    ]
-                    items_to_add[prefix + "v_proj.bias"] = state_dict[k_bias][2 * dim :]
+                                                           dim: 2 * dim
+                                                           ]
+                    items_to_add[prefix + "v_proj.bias"] = state_dict[k_bias][2 * dim:]
 
                     keys_to_remove.append(prefix + "in_proj_bias")
 
