@@ -205,7 +205,8 @@ class GraphormerGraphEncoder(nn.Module):
     ) -> Union[Tensor, list[torch.Tensor]]:
         if attn_bias is None:
             assert not self.attention_bias, 'missing graph attention bias'
-
+        if get_attn_scores:
+            last_state_only = False
         # compute padding mask. This is needed for multi-head attention
         B, T, D = x.shape
 
