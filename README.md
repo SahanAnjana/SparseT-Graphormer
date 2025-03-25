@@ -9,6 +9,8 @@ Spatiotemporal data is ubiquitous, and forecasting it has important applications
 
 Graphormer backbone extended along time. The model is trained on two traffic prediction datasets separately (PEMS-BAY & METR-LA). For technical details, see [**paper**](https://www.arxiv.org/abs/2501.13274).
 
+Pretrained Weights:
+[https://www.kaggle.com/models/markbai/t-graphormer_pred_mini](https://www.kaggle.com/models/markbai/t-graphormer_pred_mini)
 ## Usage
 
 ``` Python
