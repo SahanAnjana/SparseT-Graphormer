@@ -678,7 +678,7 @@ def get_samples_targets(batch, task):
     # targets = scaler.inverse_transform(targets) if scaler else targets
     if task == 'pred':
         N, P, V, D = target_shape
-        if D == 2:
+        if D > 1:
             targets = targets[..., [0]]  # calculate loss only on the sensor data
             D = 1
             target_shape = targets.shape
