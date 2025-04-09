@@ -1,13 +1,15 @@
 # T-Graphormer
 
-Spatiotemporal data is ubiquitous, and forecasting it has important applications in many domains. However, its complex cross-component dependencies and non-linear temporal dynamics can be challenging for traditional techniques. Existing methods address this by learning the two dimensions separately. Here, we introduce T-Graphormer, a Transformer-based approach capable of modelling spatiotemporal correlations simultaneously. By adding temporal encodings in the Graphormer architecture, each node attends to all other tokens within the graph sequence, enabling the model to capture rich spacetime patterns with minimal predefined inductive biases. We show the effectiveness of T-Graphormer on real-world traffic prediction benchmark datasets. Compared to state-of-the-art methods, T-Graphormer reduces root mean squared error (RMSE) and mean absolute percentage error (MAPE) by up to 20% and 10%.
+T-Graphormer is a Transformer-based model capable of modelling spatiotemporal correlations simultaneously. By adding temporal encodings in the Graphormer architecture, each node attends to all other tokens within the graph sequence, enabling the model to capture rich spacetime patterns with minimal predefined inductive biases. 
+
+We show the effectiveness of T-Graphormer on real-world traffic prediction benchmark datasets. Compared to state-of-the-art methods, T-Graphormer reduces root mean squared error (RMSE) and mean absolute percentage error (MAPE) by up to 20% and 10%.
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/t-graphormer-using-transformers-for/traffic-prediction-on-pems-bay)](https://paperswithcode.com/sota/traffic-prediction-on-pems-bay?p=t-graphormer-using-transformers-for)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/t-graphormer-using-transformers-for/traffic-prediction-on-metr-la)](https://paperswithcode.com/sota/traffic-prediction-on-metr-la?p=t-graphormer-using-transformers-for)
 
 # Model Summary
 
-Graphormer backbone extended along time. The model is trained on two traffic prediction datasets separately (PEMS-BAY & METR-LA). For technical details, see [**paper**](https://www.arxiv.org/abs/2501.13274).
+The model is trained on two traffic prediction datasets separately (PEMS-BAY & METR-LA). For technical details, see [**paper**](https://www.arxiv.org/abs/2501.13274).
 
 Pretrained Weights:
 [https://www.kaggle.com/models/markbai/t-graphormer_pred_mini](https://www.kaggle.com/models/markbai/t-graphormer_pred_mini)
