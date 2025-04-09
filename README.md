@@ -4,24 +4,26 @@ T-Graphormer is a Transformer-based model capable of modelling spatiotemporal co
 
 We show the effectiveness of T-Graphormer on real-world traffic prediction benchmark datasets. Compared to state-of-the-art methods, T-Graphormer reduces root mean squared error (RMSE) and mean absolute percentage error (MAPE) by up to 20% and 10%.
 
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/t-graphormer-using-transformers-for/traffic-prediction-on-pems-bay)](https://paperswithcode.com/sota/traffic-prediction-on-pems-bay?p=t-graphormer-using-transformers-for)
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/t-graphormer-using-transformers-for/traffic-prediction-on-metr-la)](https://paperswithcode.com/sota/traffic-prediction-on-metr-la?p=t-graphormer-using-transformers-for)
+
 <figure id="fig:model" style="text-align: center;">
-    <img src="figures/arch.png" alt="T-Graphormer architecture" style="display: block; margin: 0 auto;">
-    <figcaption style="text-align: left; margin-top: 0.5rem;">
-Fig 1: T-Graphormer model architecture.
-    </figcaption>
+  <img src="figures/arch.png" alt="T-Graphormer architecture" style="width: 500px; display: block; margin: 0 auto;">
+  <figcaption style="text-align: center; margin-top: 0.5rem;">
+    T-Graphormer model architecture.
+  </figcaption>
 </figure>
 
 <figure id="fig:arch_diff" style="text-align: center;">
-    <img src="figures/arch_diff.png" alt="Architectural Differences" style="display: block; margin: 0 auto;">
-    <figcaption style="text-align: left; margin-top: 0.5rem;">
-    Fig 2: Information flow differences between existing methods and T-Graphormer. In part (a), the
+  <img src="figures/arch_diff.png" alt="Architectural Differences" style="width: 500px; display: block; margin: 0 auto;">
+  <figcaption style="text-align: center; margin-top: 0.5rem;">
+    Information flow differences between existing methods and T-Graphormer. In part (a), the
     double arrows represent the cross-sectional input for each learning module, and the circle represents
-    the fusion between the modules
-     </figcaption>
-</figure>
+    the fusion between the modules.
+  </figcaption>
+</figure><br /><br />
 
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/t-graphormer-using-transformers-for/traffic-prediction-on-pems-bay)](https://paperswithcode.com/sota/traffic-prediction-on-pems-bay?p=t-graphormer-using-transformers-for)
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/t-graphormer-using-transformers-for/traffic-prediction-on-metr-la)](https://paperswithcode.com/sota/traffic-prediction-on-metr-la?p=t-graphormer-using-transformers-for)
+It has been observed in images and videos (Dosovitskiy et al., 2020; He et al., 2022; Feichtenhofer et al., 2022) that when Transformer models break free from the traditional information flow imposed by data structure, predefined relationships are learned directly from the data, subsequently improving task performance. Here, we show that this trend also applies to traffic data.
 
 # Model Summary
 
@@ -66,7 +68,7 @@ To use the model, clone the T-Graphormer repo
 git clone https://github.com/rdh1115/T-Graphormer.git
 ```
 
-If you're using it in Kaggle, you might need to run the the following cell
+If you're using it in Kaggle, you might need to run the following cell
 ``` Python
 import os, sys
 os.chdir("/kaggle/working/T-Graphormer/src")
@@ -78,11 +80,12 @@ if module_path not in sys.path:
 sys.path
 ```
 
-## Implementation requirements
 Virtual environment setup:
 ``` Bash
 pip install -r requirements_no_version.txt
 ```
+
+## Implementation requirements
 
 An example of hyperparameter grid search script is provided in `scripts/grid_finetune.sh`.\
 It submits a new job to SLURM workload manager for each combination.
