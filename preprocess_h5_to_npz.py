@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import pandas as pd
 import numpy as np
 import os
@@ -91,4 +90,3 @@ for split, idxs in splits.items():
         targets=targets
     )
     print(f"Saved {split} split: {features.shape}, {targets.shape}")
->>>>>>> 88fd380f1a4f0b76ca550f0ec694ababadb6715e
