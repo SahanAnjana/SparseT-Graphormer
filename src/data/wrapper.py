@@ -23,7 +23,9 @@ def wrap_traffic_dataset(
         edge_index=edge_indices,
         edge_weight=edge_values,
         features=train_x,
-        targets=train_y
+        targets=train_y,
+        dynamic_edges=True,
+        edge_perturb_prob=0.05
     )
     val_dataset = StaticGraphTemporalSignal(
         edge_index=edge_indices,

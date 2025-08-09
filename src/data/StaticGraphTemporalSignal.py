@@ -29,15 +29,19 @@ class StaticGraphTemporalSignal:
     """
 
     def __init__(
-            self,
-            edge_index: Edge_Index,
-            edge_weight: Edge_Weight,
-            features: Node_Features,
-            targets: Targets,
-            **kwargs: Additional_Features
+        self,
+        edge_index: Edge_Index,
+        edge_weight: Edge_Weight,
+        features: Node_Features,
+        targets: Targets,
+        dynamic_edges: bool = False,
+        edge_perturb_prob: float = 0.05,
+        **kwargs: Additional_Features
     ):
         self.edge_index = edge_index if not isinstance(edge_index, np.ndarray) else edge_index
         self.edge_weight = edge_weight if not isinstance(edge_weight, np.ndarray) else edge_weight
+        self.dynamic_edges = dynamic_edges
+        self.edge_perturb_prob = edge_perturb_prob
         self.features = np.array(features) if not isinstance(features, np.ndarray) else features
         self.targets = np.array(targets) if not isinstance(targets, np.ndarray) else targets
         self.additional_feature_keys = []
@@ -65,8 +69,19 @@ class StaticGraphTemporalSignal:
     def _get_edge_index(self):
         if self.edge_index is None:
             return self.edge_index
-        else:
-            return torch.LongTensor(self.edge_index)
+        edge_index = self.edge_index.copy() if isinstance(self.edge_index, np.ndarray) else np.array(self.edge_index)
+        if self.dynamic_edges:
+            # Randomly drop/add edges
+            num_edges = edge_index.shape[1]
+            num_nodes = edge_index.max() + 1
+            # Drop edges
+            mask = np.random.rand(num_edges) > self.edge_perturb_prob
+            edge_index = edge_index[:, mask]
+            # Add random edges
+            num_add = int(self.edge_perturb_prob * num_edges)
+            new_edges = np.random.randint(0, num_nodes, size=(2, num_add))
+            edge_index = np.concatenate([edge_index, new_edges], axis=1)
+        return torch.LongTensor(edge_index)
 
     def _get_edge_weight(self):
         if self.edge_weight is None:

@@ -1,3 +1,41 @@
+# Results & Figures
+
+## Table I. Performance on METR-LA and PEMS-BAY (Horizon 12)
+
+| Model                | Dataset   | MAE   | RMSE  | MAPE  |
+|----------------------|-----------|-------|-------|-------|
+| T-Graphormer         | METR-LA   |       |       |       |
+| SparseT-Graphormer   | METR-LA   |       |       |       |
+| T-Graphormer         | PEMS-BAY  |       |       |       |
+| SparseT-Graphormer   | PEMS-BAY  |       |       |       |
+
+*Fill in the values after running experiments.*
+
+## Fig. 1. Comparison of MAE, RMSE, and MAPE for T-Graphormer and SparseT-Graphormer on METR-LA and PEMS-BAY datasets
+
+*Insert plot here. Use matplotlib/seaborn to visualize results after experiments.*
+
+## Fig. 2. Memory usage comparison on METR-LA dataset
+
+*Insert plot here. Track GPU/CPU memory during training and visualize.*
+
+## Fig. 3. Training throughput vs. window size on METR-LA dataset
+
+*Insert plot here. Measure training speed for different attention window sizes and visualize.*
+# Mixed Precision & Checkpointing
+
+This project supports automatic mixed precision (AMP) and model checkpointing out of the box.
+
+## Mixed Precision
+- Training uses PyTorch's AMP (`torch.amp.autocast`) for faster and memory-efficient computation.
+- To enable mixed precision, set the argument `--fp32 False` (default is mixed precision).
+
+## Checkpointing
+- Model, optimizer, and scaler states are saved periodically during training.
+- Use the argument `--checkpoint_period` to control how often checkpoints are saved.
+- Checkpoints are stored in the output directory and can be resumed with `--resume <checkpoint_path>`.
+
+No additional code changes are required; these features are integrated in the training scripts (`main_finetune.py`, `engine_finetune.py`).
 # T-Graphormer
 [![arXiv](https://img.shields.io/badge/arXiv-2501.13274-b31b1b.svg)](https://www.arxiv.org/abs/2501.13274)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/t-graphormer-using-transformers-for/traffic-prediction-on-pems-bay)](https://paperswithcode.com/sota/traffic-prediction-on-pems-bay?p=t-graphormer-using-transformers-for)

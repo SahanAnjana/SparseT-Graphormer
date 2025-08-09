@@ -10,17 +10,18 @@ from src.modules.multihead_attention import MultiheadAttention
 
 class GraphormerGraphEncoderLayer(nn.Module):
     def __init__(
-            self,
-            embedding_dim: int = 768,
-            ffn_embedding_dim: int = 3072,
-            num_attention_heads: int = 8,
-            dropout: float = 0.1,
-            attention_dropout: float = 0.1,
-            activation_dropout: float = 0.1,
-            activation_fn: str = "gelu",
-            export: bool = False,
-            init_fn: Callable = None,
-            pre_layernorm: bool = True,
+        self,
+        embedding_dim: int = 768,
+        ffn_embedding_dim: int = 3072,
+        num_attention_heads: int = 8,
+        dropout: float = 0.1,
+        attention_dropout: float = 0.1,
+        activation_dropout: float = 0.1,
+        activation_fn: str = "gelu",
+        export: bool = False,
+        init_fn: Callable = None,
+        pre_layernorm: bool = True,
+        attention_type: str = "multihead",  # new argument
     ) -> None:
         super().__init__()
 
@@ -38,12 +39,23 @@ class GraphormerGraphEncoderLayer(nn.Module):
 
         self.activation_fn = nn.GELU() if activation_fn == "gelu" else nn.ReLU()
 
-        self.self_attn = MultiheadAttention(
-            self.embedding_dim,
-            num_attention_heads,
-            dropout=attention_dropout,
-            self_attention=True,
-        )
+        if attention_type == "multihead":
+            self.self_attn = MultiheadAttention(
+                self.embedding_dim,
+                num_attention_heads,
+                dropout=attention_dropout,
+                self_attention=True,
+            )
+        elif attention_type == "longformer":
+            from src.modules.longformer_attention import LongformerAttention
+            self.self_attn = LongformerAttention(
+                self.embedding_dim,
+                num_attention_heads,
+                attention_window=512,
+                dropout=attention_dropout,
+            )
+        else:
+            raise ValueError(f"Unknown attention_type: {attention_type}")
 
         # layer norm associated with the self attention layer
         self.self_attn_layer_norm = LayerNorm(self.embedding_dim, eps=1e-8)
@@ -70,15 +82,22 @@ class GraphormerGraphEncoderLayer(nn.Module):
         residual = x
         if self.pre_layernorm:
             x = self.self_attn_layer_norm(x)
-        x, attn = self.self_attn(
-            query=x,
-            key=x,
-            value=x,
-            attn_bias=self_attn_bias,
-            key_padding_mask=self_attn_padding_mask,
-            need_weights=get_attn_scores,
-            attn_mask=self_attn_mask,
-        )
+        if isinstance(self.self_attn, MultiheadAttention):
+            x, attn = self.self_attn(
+                query=x,
+                key=x,
+                value=x,
+                attn_bias=self_attn_bias,
+                key_padding_mask=self_attn_padding_mask,
+                need_weights=get_attn_scores,
+                attn_mask=self_attn_mask,
+            )
+        else:
+            # LongformerAttention does not use attn_bias, key, value, etc.
+            x, attn = self.self_attn(
+                query=x,
+                attention_mask=self_attn_mask,
+            )
         x = self.dropout_module(x)
         x = residual + x
         if not self.pre_layernorm:
